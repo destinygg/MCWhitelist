@@ -49,6 +49,7 @@ public class SubWhitelister extends JavaPlugin
 		cm.registerCommand(new ToggleCommand());
 		cm.registerCommand(new ExportCommand());
 		
+		getCommand("register").setExecutor(new RegisterCommand(this));
 		
 		log.info("Setting up listeners...");
 		getServer().getPluginManager().registerEvents(new PlayerListener(), this);
