@@ -2,20 +2,24 @@ package net.bitjump.bukkit.subwhitelister;
 
 import java.util.logging.Logger;
 
-import net.bitjump.bukkit.subwhitelister.commands.*;
-import net.bitjump.bukkit.subwhitelister.listeners.PlayerListener;
-import net.bitjump.bukkit.subwhitelister.util.ConfigManager;
-import net.bitjump.bukkit.subwhitelister.util.WhitelistManager;
-
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.destinygg.mcwhitelist.DestinyGGAuthPlayerListenerImpl;
+
+import net.bitjump.bukkit.subwhitelister.commands.CommandManager;
+import net.bitjump.bukkit.subwhitelister.commands.ExportCommand;
+import net.bitjump.bukkit.subwhitelister.commands.ListCommand;
+import net.bitjump.bukkit.subwhitelister.commands.ReloadCommand;
+import net.bitjump.bukkit.subwhitelister.commands.ToggleCommand;
+import net.bitjump.bukkit.subwhitelister.util.ConfigManager;
+import net.bitjump.bukkit.subwhitelister.util.WhitelistManager;
 
 public class SubWhitelister extends JavaPlugin
 {
 	public static JavaPlugin instance;
 	
-	private Logger log;
+	public static Logger LOGGER;
 
 	public static FileConfiguration config;
 	public static PluginDescriptionFile pdf;
@@ -28,9 +32,9 @@ public class SubWhitelister extends JavaPlugin
 	
 	public void onEnable()
 	{
-		log = getLogger();
+		LOGGER = getLogger();
 		
-		log.info("Plugin initializing...");
+		LOGGER.info("Plugin initializing...");
 		
 		pdf = getDescription();
 
@@ -41,18 +45,16 @@ public class SubWhitelister extends JavaPlugin
 		ConfigManager.setup(this);
 		config = ConfigManager.setupConfig();
 		
-		log.info("Setting up commands...");
+		LOGGER.info("Setting up commands...");
 		cm = new CommandManager(this);
 		cm.setCommandPrefix("sw");
 		cm.registerCommand(new ListCommand());
 		cm.registerCommand(new ReloadCommand());
 		cm.registerCommand(new ToggleCommand());
 		cm.registerCommand(new ExportCommand());
-		
-		getCommand("register").setExecutor(new RegisterCommand(this));
-		
-		log.info("Setting up listeners...");
-		getServer().getPluginManager().registerEvents(new PlayerListener(), this);
+				
+		LOGGER.info("Setting up listeners...");
+		getServer().getPluginManager().registerEvents(new DestinyGGAuthPlayerListenerImpl(), this);
 		
 		instance = this;
 		

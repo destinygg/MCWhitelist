@@ -7,11 +7,6 @@ commands:
         description: The SubWhitelister master command.
         usage: /<command> [subcommand]
         aliases: [subwhitelister]
-    register:
-        description: user register command
-        usage: /register <private key>
-        permission: subwhitelister.register
-
 permissions:
     subwhitelister.*:
         default: op
