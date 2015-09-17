@@ -3,22 +3,18 @@
  */
 package org.destinygg.mcwhitelist.auth;
 
-import static us.monoid.web.Resty.data;
-import static us.monoid.web.Resty.form;
-
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.commons.lang3.StringUtils;
+import org.destinygg.mcwhitelist.auth.AuthResponse.AuthResponseType;
+import org.json.JSONObject;
 
-import us.monoid.json.JSONException;
-import us.monoid.json.JSONObject;
-import us.monoid.web.JSONResource;
-import us.monoid.web.Resty;
-import us.monoid.web.mime.MultipartContent;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.JsonNode;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 /**
  * Authentication REST client to interacy with the destiny.gg API
@@ -32,14 +28,12 @@ public class DestinyGGAuthServiceImpl implements AuthService {
 	private String privateKey;
 	private String baseUrl;
 	private String authUrl;
-	private String refreshUrl;
 	private HashMap<String, CachedAuthUser> authCache;
 
-	public DestinyGGAuthServiceImpl(String privateKey, String baseUrl) {
+	public DestinyGGAuthServiceImpl(String privateKey, String authUrl) {
 		this.privateKey = privateKey;
-		this.baseUrl = baseUrl;
+		this.baseUrl = authUrl;
 		this.authUrl = this.baseUrl;
-		this.refreshUrl = this.baseUrl + "?privatekey=" + privateKey + "&uuid=";
 		this.authCache = new HashMap<String, CachedAuthUser>();
 	}
 
@@ -49,57 +43,88 @@ public class DestinyGGAuthServiceImpl implements AuthService {
 	 * @param cachedUser
 	 *            the cache item to test
 	 * @throws IOException
-	 * @throws JSONException
 	 */
-	public void refreshUser(CachedAuthUser cachedUser) throws IOException, JSONException {
+	public void refreshUser(CachedAuthUser cachedUser) throws IOException {
 		if (!cachedUser.isCacheExpired()) {
 			return;
 		}
-		JSONResource response = new Resty().json(this.refreshUrl + cachedUser.getMCUUID());
-		if (!(response.status(200) || response.status(201) || response.status(202))) {
-			LOGGER.log(Level.INFO, "Refresh rejected: " + cachedUser.getMCName());
+
+		JSONObject responseData = null;
+		try {
+			HttpResponse<String> httpResponse = Unirest.get(this.authUrl).header("accept", "application/json")
+					.queryString("privatekey", privateKey).queryString("uuid", cachedUser.getMCUUID()).asString();
+
+			if (!isValidResponseStatus(httpResponse.getStatus())) {
+				LOGGER.log(Level.WARNING,
+						"Refresh rejected: " + cachedUser.getMCName() + " -> " + httpResponse.getStatusText());
+				return;
+			}
+			responseData = new JsonNode(httpResponse.getBody()).getObject();
+
+		} catch (UnirestException e) {
+			LOGGER.log(Level.WARNING, "Refresh failed: " + cachedUser.getMCName());
+			e.printStackTrace();
 			return;
 		}
 
-		JSONObject data = response.object();
-		cachedUser.setSubscriptionEndTimestamp(data.getLong("end"));
+		cachedUser.setSubscriptionEndTimestamp(responseData.getLong("end"));
 		cachedUser.resetCacheTimestamp();
 	}
 
 	@Override
-	public AuthUser authenticateUser(String mcName, String mcUUID) throws IOException, JSONException {
+	public AuthResponse authenticateUser(String mcName, String mcUUID) throws IOException {
 		CachedAuthUser authUser = authCache.get(mcUUID);
 
 		if (authUser != null && authUser.isValid()) {
-			// Refresh user if necessary
+			// Already know this user, try and refresh if needed
 			refreshUser(authUser);
-			return authUser;
+		} else {
+			JSONObject responseData = null;
+			try {
+				HttpResponse<String> httpResponse = Unirest.post(authUrl).header("accept", "application/json")
+						.field("privatekey", privateKey).field("uuid", mcUUID).field("name", mcName).asString();
+
+				if (!isValidResponseStatus(httpResponse.getStatus())) {
+					LOGGER.log(Level.WARNING, "Authentication rejected: " + httpResponse.getStatusText());
+					AuthResponse failureResponse = new AuthResponse(null, AuthResponseType.BAD_REQUEST);
+					if (httpResponse.getStatus() == 404) {
+						failureResponse.authResponseType = AuthResponseType.USER_NOT_FOUND;
+					} else if (httpResponse.getStatus() == 403) {
+						failureResponse.authResponseType = AuthResponseType.USER_NOT_SUB;
+					}
+					return failureResponse;
+				}
+				responseData = new JsonNode(httpResponse.getBody()).getObject();
+
+			} catch (UnirestException e) {
+				LOGGER.log(Level.WARNING, "Authentication failed: " + mcName);
+				e.printStackTrace();
+				return new AuthResponse(authUser, AuthResponseType.BAD_RESPONSE);
+			}
+
+			authUser = new DestinyGGUserImpl(responseData.getString("nick"), responseData.getLong("end"));
+			authUser.setMCName(mcName);
+			authUser.setMCUUID(mcUUID);
 		}
-
-		MultipartContent multiPartContent = form(data("uuid", mcUUID), data("privatekey", privateKey),
-				data("name", mcName));
-		JSONResource response = new Resty().json(authUrl, multiPartContent);
-
-		if (!(response.status(200) || response.status(201) || response.status(202))) {
-			LOGGER.log(Level.WARNING, "Authentication rejected: " + multiPartContent.toString());
-			return null;
-		}
-
-		JSONObject data = response.object();
-		authUser = new DestinyGGUserImpl(data.getString("nick"), data.getLong("end"));
-		authUser.setMCName(mcName);
-		authUser.setMCUUID(mcUUID);
 
 		if (authUser.isValid()) {
-			// Valid response user, add or update in cache
+			// Valid destiny.gg user linked, check subscription and cache
 			authCache.put(mcUUID, authUser);
+			if (authUser.isSubscriptionExpired()) {
+				return new AuthResponse(authUser, AuthResponseType.USER_NOT_SUB);
+			} else {
+				return new AuthResponse(authUser, AuthResponseType.VALID_AUTH);
+			}
 		} else {
 			// Invalid response / user, remove from cache and set null
 			authCache.put(mcUUID, null);
 			authUser = null;
+			return new AuthResponse(authUser, AuthResponseType.BAD_RESPONSE);
 		}
 
-		return authUser;
 	}
 
+	private boolean isValidResponseStatus(int status) {
+		return status == 200 || status == 201 || status == 202;
+	}
 }

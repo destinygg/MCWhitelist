@@ -5,7 +5,7 @@ package org.destinygg.mcwhitelist.auth;
 
 import java.io.IOException;
 
-import us.monoid.json.JSONException;
+import org.json.JSONException;
 
 /**
  * @author xtphty
@@ -29,5 +29,5 @@ public interface AuthService {
 	 * @throws JSONException
 	 *             if the server response is invalid
 	 */
-	public AuthUser authenticateUser(String mcName, String mcUUID) throws IOException, JSONException;
+	public AuthResponse authenticateUser(String mcName, String mcUUID) throws IOException, JSONException;
 }
