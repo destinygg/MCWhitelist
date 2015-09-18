@@ -1,32 +1,4 @@
 name: ${project.name}
-main: net.bitjump.bukkit.subwhitelister.SubWhitelister
+main: org.destinygg.mcwhitelist.MCWhitelistPlugin
 version: ${project.version}
-author: Bitjump
-commands:
-    sw:
-        description: The SubWhitelister master command.
-        usage: /<command> [subcommand]
-        aliases: [subwhitelister]
-permissions:
-    subwhitelister.*:
-        default: op
-        children:
-            subwhitelister.commands.*: true
-            subwhitelister.exempt: true
-    subwhitelister.commands.*:
-        default: false
-        children:
-            subwhitelister.commands.export: true
-            subwhitelister.commands.list: true
-            subwhitelister.commands.reload: true
-            subwhitelister.commands.toggle: true
-    subwhitelister.commands.export:
-        default: false       
-    subwhitelister.commands.list:
-        default: false
-    subwhitelister.commands.reload:
-        default: false
-    subwhitelister.commands.toggle:
-        default: false
-    subwhitelister.exempt:
-        default: false
+author: destinygg
