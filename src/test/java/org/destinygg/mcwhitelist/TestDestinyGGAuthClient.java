@@ -36,7 +36,7 @@ public class TestDestinyGGAuthClient {
 	private final String VALID_MCUSER = "xtphty";
 	private final String VALID_MCUUID = "43685a5f-b5e6-4dfe-a278-fb768575116e";
 
-	private final String INVALID_MCUSER = "hephaestus";
+	private final String INVALID_MCUSER = "3er76q8af1";
 	private final String INVALID_MCUUID = "ea795e60-ac76-43f2-822d-e5878aa35235";
 
 	private static FileConfiguration config;
@@ -52,8 +52,7 @@ public class TestDestinyGGAuthClient {
 				config.getString("authentication.apiUrl"));
 		AuthResponse authResponse = authService.authenticateUser(VALID_MCUSER, VALID_MCUUID);
 		assertEquals(AuthResponseType.VALID_AUTH, authResponse.authResponseType);
-		// sztanpet has xtphty as his mc username on stage.destiny.gg
-		assertEquals("sztanpet", authResponse.authUser.getLoginId());
+		assertEquals("xxtphty", authResponse.authUser.getLoginId());
 
 		// Force expired cache
 		Long before = System.currentTimeMillis();

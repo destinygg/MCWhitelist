@@ -5,7 +5,7 @@ package org.destinygg.mcwhitelist.auth;
 
 /**
  * Spec for authentication objects. Required to provide login, mc name and uuid;
- * and some basic validations.
+ * and some basic validations / introspection details
  * 
  * @author xtphty
  *

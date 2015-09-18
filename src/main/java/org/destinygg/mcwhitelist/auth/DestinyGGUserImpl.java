@@ -8,6 +8,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 
 /**
+ * {@link CachedAuthUser} implementation for storing a destiny.gg user's
+ * authenticated data, and providing necessary validation
+ * 
  * @author xtphty
  *
  */

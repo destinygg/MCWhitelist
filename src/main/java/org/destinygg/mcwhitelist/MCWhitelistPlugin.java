@@ -1,14 +1,19 @@
 package org.destinygg.mcwhitelist;
 
 import java.io.File;
-import java.net.URISyntaxException;
 import java.util.logging.Logger;
 
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * Main plugin class
+ * @author xtphty
+ *
+ */
 public class MCWhitelistPlugin extends JavaPlugin {
 	public static JavaPlugin instance;
 
@@ -32,14 +37,24 @@ public class MCWhitelistPlugin extends JavaPlugin {
 		version = pdf.getVersion();
 		author = pdf.getAuthors().get(0);
 
-		try {
-			config = YamlConfiguration.loadConfiguration(new File(ClassLoader.getSystemResource("config.yml").toURI()));
-		} catch (URISyntaxException e) {
-			e.printStackTrace();
-		}
+		config = YamlConfiguration.loadConfiguration(new File(this.getDataFolder(), "config.yml"));
+		LOGGER.info("Auth config loaded::\n\turl: " + config.getString("authentication.apiUrl") + "\n\tprivateKey: "
+				+ config.getString("authentication.privateKey").substring(0, 4) + "************"
+				+ "\n\tlistenerClassClass: " + config.getString("authentication.listenerClass"));
 
 		LOGGER.info("Setting up listeners...");
-		getServer().getPluginManager().registerEvents(new DestinyGGPlayerAuthListener(), this);
+		try {
+			Class<? extends PlayerAuthListener> clazz = Class.forName(config.getString("authentication.listenerClass"))
+					.asSubclass(PlayerAuthListener.class);
+			getServer().getPluginManager().registerEvents(clazz.newInstance(), this);
+
+		} catch (Exception e) {
+			LOGGER.severe(e.getMessage());
+			e.printStackTrace();
+			LOGGER.severe("Auth listener load failed, shutting down...");
+			Bukkit.getServer().shutdown();
+		}
+
 		instance = this;
 	}
 

@@ -4,7 +4,9 @@
 package org.destinygg.mcwhitelist.auth;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,13 +30,13 @@ public class DestinyGGAuthServiceImpl implements AuthService {
 	private String privateKey;
 	private String baseUrl;
 	private String authUrl;
-	private HashMap<String, CachedAuthUser> authCache;
+	private Map<String, CachedAuthUser> authCache;
 
 	public DestinyGGAuthServiceImpl(String privateKey, String authUrl) {
 		this.privateKey = privateKey;
 		this.baseUrl = authUrl;
 		this.authUrl = this.baseUrl;
-		this.authCache = new HashMap<String, CachedAuthUser>();
+		this.authCache = Collections.synchronizedMap(new HashMap<String, CachedAuthUser>());
 	}
 
 	/**
@@ -69,6 +71,7 @@ public class DestinyGGAuthServiceImpl implements AuthService {
 
 		cachedUser.setSubscriptionEndTimestamp(responseData.getLong("end"));
 		cachedUser.resetCacheTimestamp();
+		LOGGER.log(Level.INFO, "Refresh completed: " + cachedUser.getMCName() + ", " + cachedUser.getLastRefreshTimestamp());
 	}
 
 	@Override
@@ -81,8 +84,12 @@ public class DestinyGGAuthServiceImpl implements AuthService {
 		} else {
 			JSONObject responseData = null;
 			try {
-				HttpResponse<String> httpResponse = Unirest.post(authUrl).header("accept", "application/json")
-						.field("privatekey", privateKey).field("uuid", mcUUID).field("name", mcName).asString();
+				HttpResponse<String> httpResponse = Unirest.post(authUrl).
+						header("accept", "application/json").
+						field("privatekey", privateKey).
+						field("uuid", mcUUID).
+						field("name", mcName).
+						asString();
 
 				if (!isValidResponseStatus(httpResponse.getStatus())) {
 					LOGGER.log(Level.WARNING, "Authentication rejected: " + httpResponse.getStatusText());
@@ -125,6 +132,16 @@ public class DestinyGGAuthServiceImpl implements AuthService {
 	}
 
 	private boolean isValidResponseStatus(int status) {
-		return status == 200 || status == 201 || status == 202;
+		return status == 200 || status == 201 || status == 202 || status == 204;
+	}
+
+	@Override
+	public String getPlayerLoginId(String mcUUID) {
+		AuthUser user = authCache.get(mcUUID);
+		if (user != null && user.isValid()) {
+			return user.getLoginId();
+		} else {
+			return null;
+		}
 	}
 }

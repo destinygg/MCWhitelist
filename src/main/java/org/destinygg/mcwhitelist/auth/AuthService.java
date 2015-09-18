@@ -8,6 +8,8 @@ import java.io.IOException;
 import org.json.JSONException;
 
 /**
+ * Authenticates minecraft users against an external API
+ * 
  * @author xtphty
  *
  */
@@ -21,7 +23,7 @@ public interface AuthService {
 	 * @param mcUUID
 	 *            the user's minecraft UUID
 	 * @return An {@link AuthUser} instance if a valid user is linked to this MC
-	 *         id , null otherwise. Users access to minecraft may be expired, 
+	 *         id , null otherwise. Users access to minecraft may be expired,
 	 *         see {@link AuthUser#isSubscriptionExpired()}
 	 * 
 	 * @throws IOException
@@ -30,4 +32,12 @@ public interface AuthService {
 	 *             if the server response is invalid
 	 */
 	public AuthResponse authenticateUser(String mcName, String mcUUID) throws IOException, JSONException;
+
+	/**
+	 * @param mcUUID
+	 *            the player's minecraft uuid
+	 * @return the player's login name for this auth service, null if not
+	 *         connected
+	 */
+	public String getPlayerLoginId(String mcUUID);
 }

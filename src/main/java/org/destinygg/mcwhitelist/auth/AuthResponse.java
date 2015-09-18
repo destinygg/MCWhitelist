@@ -10,9 +10,12 @@ package org.destinygg.mcwhitelist.auth;
  *
  */
 public class AuthResponse {
+	/**
+	 * Enumerates possible errors and appropriate user messages
+	 */
 	public enum AuthResponseType{
-		USER_NOT_FOUND ("User was not found.", false), 
-		USER_NOT_SUB ("User is not subscribed.", false),
+		USER_NOT_FOUND ("User not found.", false), 
+		USER_NOT_SUB ("User not subscribed.", false),
 		BAD_REQUEST ("Auth request failed.", false),
 		BAD_RESPONSE ("Auth response invalid.", false),
 		VALID_AUTH ("Valid subscriber authenticated.", true);
@@ -21,6 +24,7 @@ public class AuthResponse {
 		private boolean validResponse;
 		private AuthResponseType(String message, boolean validResponse){
 			this.message = message;
+			this.validResponse = validResponse;
 		}
 		public String getMessage(){
 			return this.message;
