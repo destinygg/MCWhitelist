@@ -3,8 +3,6 @@ MCWhitelist
 
 ##A plugin for whitelisting users.
 
-###Nothing is done in this readme, these are just the plans
-
 Based originally on the https://github.com/Bitjump/SubWhitelister mod.
 
 It calls URL's to handle whitlisting of users.
@@ -22,7 +20,7 @@ URLs
  * The `privatekey` parameter is purely to authenticate the server itself, it is always the same and is supposed to be kept a secret
  * The `name` is the minecraft name of the user
  * The `uuid` is the minecraft uuid connected to the user, it does not change as opposed to the name of the player
- * On error, the **status code 403** will be regarded as the error code for an expired subscription, all other status codes are "ignored"
+ * On error, the **status code 403** will be regarded as the error code for an expired subscription, all other 4xx status codes are treated as errors
 
 The `nick` property of the json object is used to announce the player to the server, to disable set the announcement message to an empty string.
 The announcement message uses two placeholders: `{nick}` the nick received from the API, and `{name}` the minecraft name of the player.
