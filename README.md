@@ -27,7 +27,10 @@ The announcement message uses two placeholders: `{nick}` the nick received from 
 
 Installation
 -------------
-Simply drag the provided `MCWhitelist.jar` file into your `plugins/` directory and reboot your server. The configuration file will be automatically generated.
+ * Compile or [download](https://github.com/destinygg/MCWhitelist/releases) the `MCWhitelist.jar` plugin binary into your `plugins/` directory.  
+ * Save a copy of the [auth config file](https://github.com/destinygg/MCWhitelist/blob/master/src/main/resources/config.yml) to `plugins/MCWhitelist/config.yml`.
+ * Update `config.yml` with your own REST API parameters.
+ * Start your server
 
 Commands and Permissions
 ------------------------
