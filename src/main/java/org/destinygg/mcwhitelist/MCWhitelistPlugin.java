@@ -46,7 +46,9 @@ public class MCWhitelistPlugin extends JavaPlugin {
 		try {
 			Class<? extends PlayerAuthListener> clazz = Class.forName(config.getString("authentication.listenerClass"))
 					.asSubclass(PlayerAuthListener.class);
-			getServer().getPluginManager().registerEvents(clazz.newInstance(), this);
+			PlayerAuthListener instance = clazz.newInstance();
+			instance.initializeListener(config);
+			getServer().getPluginManager().registerEvents(instance, this);
 
 		} catch (Exception e) {
 			LOGGER.severe(e.getMessage());

@@ -3,6 +3,9 @@
  */
 package org.destinygg.mcwhitelist;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
@@ -28,8 +31,20 @@ public abstract class AbstractPlayerAuthListener implements PlayerAuthListener {
 	private static Logger LOGGER = Logger.getLogger(AbstractPlayerAuthListener.class.getName());
 
 	private AuthService authService = null;
+	private Set<String> trustedUsers = null;
 
 	public abstract AuthService createAuthService(FileConfiguration authConfig);
+
+	@Override
+	public void initializeListener(FileConfiguration authConfig) {
+		this.authService = createAuthService(authConfig);
+		trustedUsers = new HashSet<String>();
+
+		List<String> list = authConfig.getStringList("authentication.trustedUsers");
+		for (String user : list) {
+			trustedUsers.add(user);
+		}
+	}
 
 	public String getAnnounceMessage(String mcName, String authName) {
 		return "User " + ChatColor.RED + authName + ChatColor.WHITE + " connected as " + ChatColor.BLUE + mcName;
@@ -39,9 +54,11 @@ public abstract class AbstractPlayerAuthListener implements PlayerAuthListener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onAsyncPlayerPreLoginEvent(AsyncPlayerPreLoginEvent event) {
 		LOGGER.info("Trying to authenticate: " + event.getName());
-
-		if (this.authService == null) {
-			this.authService = createAuthService(MCWhitelistPlugin.config);
+		
+		if (trustedUsers.contains(event.getName())){
+			LOGGER.info("Trusted user allowed without sub check: " + event.getName());
+			event.allow();
+			return;
 		}
 
 		try {

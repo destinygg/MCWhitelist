@@ -3,6 +3,7 @@
  */
 package org.destinygg.mcwhitelist;
 
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -18,7 +19,15 @@ import org.bukkit.event.player.PlayerJoinEvent;
  *
  */
 public interface PlayerAuthListener extends Listener {
-
+	/**
+	 * Initializes the listener with the given config (avoiding static ref to
+	 * config)
+	 * 
+	 * @param authConfig
+	 *            the auth config to initialize with
+	 */
+	public void initializeListener(FileConfiguration authConfig);
+	
 	/**
 	 * Authenticates players trying to log in
 	 * 
