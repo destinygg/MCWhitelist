@@ -50,7 +50,7 @@ public class TestDestinyGGAuthClient {
 	public void testAuthenticateUser() throws IOException, JSONException, URISyntaxException {
 		AuthService authService = new DestinyGGAuthServiceImpl(config.getString("authentication.privateKey"),
 				config.getString("authentication.apiUrl"));
-		AuthResponse authResponse = authService.authenticateUser(VALID_MCUSER, VALID_MCUUID);
+		AuthResponse authResponse = authService.authenticateUser(VALID_MCUSER, VALID_MCUUID, "123");
 		assertEquals(AuthResponseType.VALID_AUTH, authResponse.authResponseType);
 		assertEquals("xxtphty", authResponse.authUser.getLoginId());
 
@@ -59,27 +59,31 @@ public class TestDestinyGGAuthClient {
 		Whitebox.setInternalState(authResponse.authUser, "cacheEndTimestamp",
 				System.currentTimeMillis() - TimeUnit.DAYS.toMillis(2));
 		assertEquals(true, ((CachedAuthUser) authResponse.authUser).isCacheExpired());
-		authResponse = authService.authenticateUser(VALID_MCUSER, VALID_MCUUID);
+		authResponse = authService.authenticateUser(VALID_MCUSER, VALID_MCUUID, "123");
 		Long after = System.currentTimeMillis();
 
 		// Makes sure refresh occurred within before/after timestamps
 		assertThat(((CachedAuthUser) authResponse.authUser).getLastRefreshTimestamp(), greaterThan(before));
 		assertThat(((CachedAuthUser) authResponse.authUser).getLastRefreshTimestamp(), lessThanOrEqualTo(after));
+
+		// Test cache is refresh for new IPs
+		authResponse = authService.authenticateUser(VALID_MCUSER, VALID_MCUUID, "123456");
+		assertEquals(((CachedAuthUser) authResponse.authUser).getLastRefreshTimestamp(), null);
 	}
 
 	@Test
 	public void testExpiredOrNoSubscription() throws IOException, JSONException, URISyntaxException {
 		AuthService authService = new DestinyGGAuthServiceImpl(config.getString("authentication.privateKey"),
 				config.getString("authentication.apiUrl"));
-		AuthResponse authResponse = authService.authenticateUser(INVALID_MCUSER, INVALID_MCUUID);
-		assertEquals(authResponse.authResponseType, AuthResponseType.USER_NOT_SUB);
+		AuthResponse authResponse = authService.authenticateUser(INVALID_MCUSER, INVALID_MCUUID, "123");
+		assertEquals(authResponse.authResponseType, AuthResponseType.USER_NOT_FOUND);
 	}
 
 	@Test
 	public void testMismatchedUUID() throws IOException, JSONException, URISyntaxException {
 		AuthService authService = new DestinyGGAuthServiceImpl(config.getString("authentication.privateKey"),
 				config.getString("authentication.apiUrl"));
-		AuthResponse authResponse = authService.authenticateUser(VALID_MCUSER, VALID_MCUUID.replaceAll("e", "f"));
+		AuthResponse authResponse = authService.authenticateUser(VALID_MCUSER, VALID_MCUUID.replaceAll("e", "f"), "123");
 		assertEquals(authResponse.authResponseType, AuthResponseType.USER_NOT_FOUND);
 		// TODO avoid potential exploit with swapping userids
 	}
@@ -88,16 +92,21 @@ public class TestDestinyGGAuthClient {
 	public void testUnknownUser() throws IOException, JSONException, URISyntaxException {
 		AuthService authService = new DestinyGGAuthServiceImpl(config.getString("authentication.privateKey"),
 				config.getString("authentication.apiUrl"));
-		AuthResponse authResponse = authService.authenticateUser(VALID_MCUSER + "123456", VALID_MCUUID);
+		AuthResponse authResponse = authService.authenticateUser(VALID_MCUSER + "123456", VALID_MCUUID, "123");
 		assertEquals(authResponse.authResponseType, AuthResponseType.USER_NOT_FOUND);
 	}
 
 	@Test
 	public void testBadPrivateKey() throws IOException, JSONException, URISyntaxException {
 		AuthService authService = new DestinyGGAuthServiceImpl("authentication.privateKey", config.getString("authentication.apiUrl"));
-		AuthResponse authResponse = authService.authenticateUser(VALID_MCUSER, VALID_MCUUID);
+		AuthResponse authResponse = authService.authenticateUser(VALID_MCUSER, VALID_MCUUID, "123");
 		assertEquals(authResponse.authResponseType, AuthResponseType.BAD_REQUEST);
-
 	}
 
+	@Test
+	public void testBannedUser() throws IOException, JSONException, URISyntaxException {
+		AuthService authService = new DestinyGGAuthServiceImpl("authentication.privateKey", config.getString("authentication.apiUrl"));
+		AuthResponse authResponse = authService.authenticateUser("200motels", "07e3430cb47c413fbed5ae65ad7135a3", "123");
+		assertEquals(authResponse.authResponseType, AuthResponseType.BAD_REQUEST);
+	}
 }

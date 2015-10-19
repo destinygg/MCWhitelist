@@ -1,4 +1,8 @@
 authentication:
-  apiUrl: https://stage.destiny.gg/auth/minecraft
-  privateKey: privateKey
+  enable: true
+  apiUrl: https://www.destiny.gg/auth/minecraft
+  privateKey: hQqi22MmZiZbQttSbZGH
   listenerClass: org.destinygg.mcwhitelist.DestinyGGPlayerAuthListener
+  trustedUsers:
+    - xtphty
+    - NeoDestiny

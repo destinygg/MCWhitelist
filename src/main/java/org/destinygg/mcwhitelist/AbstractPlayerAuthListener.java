@@ -32,6 +32,8 @@ public abstract class AbstractPlayerAuthListener implements PlayerAuthListener {
 
 	private AuthService authService = null;
 	private Set<String> trustedUsers = null;
+	
+	private boolean enabled = true;
 
 	public abstract AuthService createAuthService(FileConfiguration authConfig);
 
@@ -44,6 +46,8 @@ public abstract class AbstractPlayerAuthListener implements PlayerAuthListener {
 		for (String user : list) {
 			trustedUsers.add(user);
 		}
+		
+		enabled = authConfig.getBoolean("authentication.enable");
 	}
 
 	public String getAnnounceMessage(String mcName, String authName) {
@@ -53,6 +57,11 @@ public abstract class AbstractPlayerAuthListener implements PlayerAuthListener {
 	@Override
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onAsyncPlayerPreLoginEvent(AsyncPlayerPreLoginEvent event) {
+		if (!enabled) {
+			LOGGER.info("MCWhitelist is disabled, allowing " + event.getName());
+			return;
+		}
+		
 		LOGGER.info("Trying to authenticate: " + event.getName());
 		
 		if (trustedUsers.contains(event.getName())){
@@ -62,7 +71,8 @@ public abstract class AbstractPlayerAuthListener implements PlayerAuthListener {
 		}
 
 		try {
-			AuthResponse authResponse = authService.authenticateUser(event.getName(), event.getUniqueId().toString());
+			AuthResponse authResponse = authService.authenticateUser(event.getName(), event.getUniqueId().toString(),
+					event.getAddress().getHostAddress().toString());
 			if (!authResponse.authResponseType.isValidResponse()) {
 				// User is not valid, reject with failure message
 				event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_WHITELIST,

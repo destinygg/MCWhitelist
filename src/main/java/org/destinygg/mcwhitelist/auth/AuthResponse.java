@@ -14,9 +14,11 @@ public class AuthResponse {
 	 * Enumerates possible errors and appropriate user messages
 	 */
 	public enum AuthResponseType{
-		USER_NOT_FOUND ("User not found.", false), 
-		USER_NOT_SUB ("User not subscribed.", false),
-		BAD_REQUEST ("Auth request failed.", false),
+		USER_NOT_FOUND ("Your minecraft account is not registered on destiny.gg.", false),
+		USER_NOT_SUB ("This minecraft account is registered to a destiny.gg plebian (non-subscriber).", false),
+		USER_BANNED("This minecraft account is registered to a banned destiny.gg user.", false),
+		UUID_ALREADY_TAKEN("Minecraft account change detected on your destiny.gg profile, account changes are not allowed.", false),
+		BAD_REQUEST ("Destiny.gg authentication request failed, message an admin with this error.", false),
 		BAD_RESPONSE ("Auth response invalid.", false),
 		VALID_AUTH ("Valid subscriber authenticated.", true);
 		

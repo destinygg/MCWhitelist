@@ -17,4 +17,6 @@ public interface CachedAuthUser extends AuthUser {
 	public Long getLastAuthTimestamp();
 
 	public Long getLastRefreshTimestamp();
+
+	public void invalidate();
 }

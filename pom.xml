@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>net.bitjump.bukkit</groupId>
 	<artifactId>MCWhitelist</artifactId>
-	<version>1.2.1-beta</version>
+	<version>1.2.4-beta</version>
 	<name>MCWhitelist</name>
 
 	<properties>

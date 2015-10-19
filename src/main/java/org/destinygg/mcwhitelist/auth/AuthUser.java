@@ -15,6 +15,8 @@ public interface AuthUser {
 
 	public String getMCName();
 
+	public String getIpAddress();
+
 	public void setMCName(String mcName);
 
 	public String getMCUUID();
