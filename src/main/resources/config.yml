@@ -4,5 +4,4 @@ authentication:
   privateKey: privateKey
   listenerClass: org.destinygg.mcwhitelist.DestinyGGPlayerAuthListener
   trustedUsers:
-    - xtphty
     - NeoDestiny
