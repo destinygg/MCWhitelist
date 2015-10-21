@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,35 +51,37 @@ public class DestinyGGAuthServiceImpl implements AuthService {
         if (!cachedUser.getIpAddress().equals(ipAddress)) {
             LOGGER.log(Level.WARNING,
                     "New ip address, ignoring cache: " + cachedUser.getMCName() + " -> " + ipAddress);
-            cachedUser.invalidate();
+            cachedUser.invalidateAuth();
             return;
         }
 
-        if (!cachedUser.isCacheExpired()) {
+        if (!cachedUser.isAuthExpired()) {
+            // Cached item is still valid, skip authentication
             return;
         }
 
+        // Perform a refresh request and return
         JSONObject responseData = null;
         try {
             HttpResponse<String> httpResponse = Unirest.get(this.authUrl).header("accept", "application/json")
                     .queryString("privatekey", privateKey).queryString("uuid", cachedUser.getMCUUID())
                     .queryString("ipaddress", ipAddress).asString();
 
-            if (!isValidResponseStatus(httpResponse.getStatus())) {
+            if (isValidResponseStatus(httpResponse.getStatus())) {
+                responseData = new JsonNode(httpResponse.getBody()).getObject();
+                cachedUser.setSubscriptionEndTimestamp(responseData.getLong("end"));
+                cachedUser.resetCacheTimestamp();
+                LOGGER.log(Level.INFO,
+                        "Refresh completed: " + cachedUser.getMCName() + " -> " + cachedUser.getLastRefreshTimestamp());
+            } else {
                 LOGGER.log(Level.WARNING,
                         "Refresh rejected: " + cachedUser.getMCName() + " -> " + httpResponse.getStatusText());
-                cachedUser.invalidate();
-                return;
+                cachedUser.invalidateAuth();
             }
-            responseData = new JsonNode(httpResponse.getBody()).getObject();
-            cachedUser.setSubscriptionEndTimestamp(responseData.getLong("end"));
-            cachedUser.resetCacheTimestamp();
-            LOGGER.log(Level.INFO, "Refresh completed: " + cachedUser.getMCName() + ", " + cachedUser.getLastRefreshTimestamp());
         } catch (UnirestException e) {
-            LOGGER.log(Level.WARNING, "Refresh failed: " + cachedUser.getMCName());
-            cachedUser.invalidate();
+            LOGGER.log(Level.WARNING, "Refresh failed for " + cachedUser.getMCName() + " due to: " + e.getMessage());
+            cachedUser.invalidateAuth();
             e.printStackTrace();
-            return;
         }
     }
 
@@ -91,8 +94,15 @@ public class DestinyGGAuthServiceImpl implements AuthService {
             refreshUser(authUser, ipAddress);
         }
 
-        if (authUser == null || !authUser.isValid() || authUser.isCacheExpired()) {
-            // If no cached user, invalid, or expired cache, redo register request
+        // Check if a new authentication is required
+        if (authUser != null && authUser.isValid() && !authUser.isAuthExpired()) {
+            // Cached user is valid, approve auth
+            LOGGER.log(Level.INFO,
+                    "Validated user " + mcName + " from cache, TTL (hours) " + authUser.getCacheTTL());
+            return new AuthResponse(authUser, AuthResponseType.VALID_AUTH);
+        } else {
+            // New authentication is required, null ref cached auth if any
+            authUser = null;
             JSONObject responseData = null;
             try {
                 HttpResponse<String> httpResponse = Unirest.post(authUrl).
@@ -108,7 +118,10 @@ public class DestinyGGAuthServiceImpl implements AuthService {
                     if (body == null) {
                         body = "No reason provided";
                     }
-                    LOGGER.log(Level.WARNING, "Authentication rejected: " + httpResponse.getStatusText() + ". Reason: " + body);
+                    LOGGER.log(Level.WARNING,
+                            "Authentication rejected, with code " + httpResponse.getStatusText() + ", reason: " + body);
+
+                    // Parse failure message and create error response object.
                     AuthResponse failureResponse = new AuthResponse(null, AuthResponseType.BAD_REQUEST);
                     if (httpResponse.getStatus() == 404) {
                         failureResponse.authResponseType = AuthResponseType.USER_NOT_FOUND;
@@ -123,25 +136,28 @@ public class DestinyGGAuthServiceImpl implements AuthService {
                     } else if (httpResponse.getStatus() == 500) {
                         failureResponse.authResponseType = AuthResponseType.UUID_ALREADY_TAKEN;
                     }
+
+                    // Return immediately as failure are not cached
                     return failureResponse;
                 }
+
+                // Serialize json response data and parse to AuthUser instance
                 responseData = new JsonNode(httpResponse.getBody()).getObject();
+                authUser = new DestinyGGUserImpl(responseData.getString("nick"), ipAddress, responseData.getLong("end"));
+                authUser.setMCName(mcName);
+                authUser.setMCUUID(mcUUID);
 
             } catch (UnirestException e) {
-                LOGGER.log(Level.WARNING, "Authentication failed: " + mcName);
+                LOGGER.log(Level.WARNING, "Authentication failed for " + mcName + ", with error: " + e.getMessage());
                 e.printStackTrace();
                 return new AuthResponse(authUser, AuthResponseType.BAD_RESPONSE);
             }
-
-            authUser = new DestinyGGUserImpl(responseData.getString("nick"), ipAddress, responseData.getLong("end"));
-            authUser.setMCName(mcName);
-            authUser.setMCUUID(mcUUID);
         }
 
         if (authUser.isValid()) {
             // Valid destiny.gg user linked, check subscription and cache
             authCache.put(mcUUID, authUser);
-            if (authUser.isSubscriptionExpired()) {
+            if (authUser.isAuthExpired()) {
                 return new AuthResponse(authUser, AuthResponseType.USER_NOT_SUB);
             } else {
                 return new AuthResponse(authUser, AuthResponseType.VALID_AUTH);
@@ -152,7 +168,6 @@ public class DestinyGGAuthServiceImpl implements AuthService {
             authUser = null;
             return new AuthResponse(authUser, AuthResponseType.BAD_RESPONSE);
         }
-
     }
 
     private boolean isValidResponseStatus(int status) {

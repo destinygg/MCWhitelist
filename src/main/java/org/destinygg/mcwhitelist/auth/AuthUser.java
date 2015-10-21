@@ -23,11 +23,14 @@ public interface AuthUser {
 
 	public void setMCUUID(String mcUUID);
 
-	public Long getSubscriptionEndTimestamp();
-
 	public void setSubscriptionEndTimestamp(Long timestamp);
 
-	public boolean isSubscriptionExpired();
+	public boolean isAuthExpired();
 
+	public void invalidateAuth();
+
+	/**
+	 * @return isValid true if the user's minecraft data is valid
+	 */
 	public boolean isValid();
 }

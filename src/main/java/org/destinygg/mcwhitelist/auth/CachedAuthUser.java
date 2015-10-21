@@ -10,13 +10,9 @@ package org.destinygg.mcwhitelist.auth;
  *
  */
 public interface CachedAuthUser extends AuthUser {
-	public boolean isCacheExpired();
-
 	public void resetCacheTimestamp();
-
-	public Long getLastAuthTimestamp();
 
 	public Long getLastRefreshTimestamp();
 
-	public void invalidate();
+	public Long getCacheTTL();
 }

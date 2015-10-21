@@ -15,13 +15,24 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class DestinyGGUserImpl implements CachedAuthUser {
     private String login;
-    public Long subscriptionEndTimestamp;
-    public Long cacheEndTimestamp;
-    public Long lastAuthTimestamp;
-    public Long lastRefreshTimestamp;
-    public String mcName;
-    public String mcUUID;
-    public String ipAddress;
+
+    // When the user's sub expires
+    private Long subscriptionEndTimestamp;
+    // When the currently cached user data expires
+    private Long cacheEndTimestamp;
+    // The user's minecraft name
+    private String mcName;
+    // The user's minecraft uuid
+    private String mcUUID;
+    // The user's last used ipAddress
+    private String ipAddress;
+
+    // Internal fields
+    // When the last authorization was made with dgg
+    private Long lastAuthTimestamp;
+    // When teh last cache refresh was made with dgg
+    private Long lastRefreshTimestamp;
+
 
     public DestinyGGUserImpl(String login, String ipAddress, Long subscriptionEnd) {
         this.login = login;
@@ -69,13 +80,9 @@ public class DestinyGGUserImpl implements CachedAuthUser {
     }
 
     @Override
-    public boolean isSubscriptionExpired() {
-        return TimeUnit.MILLISECONDS.toHours(System.currentTimeMillis() - this.subscriptionEndTimestamp) > 0;
-    }
-
-    @Override
-    public Long getSubscriptionEndTimestamp() {
-        return this.subscriptionEndTimestamp;
+    public boolean isAuthExpired() {
+        return Math.min(TimeUnit.MILLISECONDS.toHours(this.subscriptionEndTimestamp - System.currentTimeMillis()),
+                TimeUnit.MILLISECONDS.toHours(this.cacheEndTimestamp - System.currentTimeMillis())) < 1;
     }
 
     @Override
@@ -91,22 +98,18 @@ public class DestinyGGUserImpl implements CachedAuthUser {
     }
 
     @Override
-    public boolean isCacheExpired() {
-        return TimeUnit.MILLISECONDS.toHours(this.cacheEndTimestamp - System.currentTimeMillis()) < 1;
-    }
-
-    @Override
-    public Long getLastAuthTimestamp() {
-        return this.lastAuthTimestamp;
-    }
-
-    @Override
     public Long getLastRefreshTimestamp() {
         return this.lastRefreshTimestamp;
     }
 
     @Override
-    public void invalidate() {
+    public Long getCacheTTL() {
+        return TimeUnit.MILLISECONDS.toHours(this.subscriptionEndTimestamp - System.currentTimeMillis());
+    }
+
+    @Override
+    public void invalidateAuth() {
         this.cacheEndTimestamp = -1L;
+        this.lastRefreshTimestamp = null;
     }
 }

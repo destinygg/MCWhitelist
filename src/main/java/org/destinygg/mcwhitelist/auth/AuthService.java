@@ -22,7 +22,7 @@ public interface AuthService {
      * @param ipAddress the user's ip address
      * @return An {@link AuthUser} instance if a valid user is linked to this MC
      * id , null otherwise. Users access to minecraft may be expired,
-     * see {@link AuthUser#isSubscriptionExpired()}
+     * see {@link AuthUser#isAuthExpired()}
      * @throws IOException   if an error occurrs when contatic the auth back end
      * @throws JSONException if the server response is invalid
      */
