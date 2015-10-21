@@ -45,7 +45,7 @@ public class TestDestinyGGAuthClient {
     }
 
     @Test
-    public void testAuthenticateUser() throws IOException, JSONException, URISyntaxException {
+    public void testAuthenticateUser() throws IOException, JSONException, URISyntaxException, InterruptedException {
         // Test initial auth
         AuthService authService = new DestinyGGAuthServiceImpl(config.getString("authentication.privateKey"),
                 config.getString("authentication.apiUrl"));
@@ -53,13 +53,13 @@ public class TestDestinyGGAuthClient {
         assertEquals(AuthResponseType.VALID_AUTH, authResponse.authResponseType);
         assertEquals("xxtphty", authResponse.authUser.getLoginId());
         /////////
+        Long before = System.currentTimeMillis();
+        Thread.sleep(1000);
 
         // Test cache usage
-        Long before = System.currentTimeMillis();
         authResponse = authService.authenticateUser(VALID_MCUSER, VALID_MCUUID, "123");
-
         // Makes sure auth request was served from cache, and no refresh was needed
-        assertThat((Long) Whitebox.getInternalState(authResponse.authUser, "lastAuthTimestamp"), lessThan(before));
+        assertThat((Long) Whitebox.getInternalState(authResponse.authUser, "lastAuthTimestamp"), lessThanOrEqualTo(before));
         assertEquals(null, ((CachedAuthUser) authResponse.authUser).getLastRefreshTimestamp());
         /////////
 
@@ -129,7 +129,7 @@ public class TestDestinyGGAuthClient {
                 config.getString("authentication.apiUrl"));
         AuthResponse authResponse = authService.authenticateUser("200motels", "07e3430c-b47c-413f-bed5-ae65ad7135a3", "123");
         assertEquals(AuthResponseType.USER_BANNED, authResponse.authResponseType);
-        authResponse = authService.authenticateUser("Mukyduck", "2cc3ff4d-647c-4e2a-a5a4-eab9e774c2b3", "123");
+        authResponse = authService.authenticateUser("BlackerTheBerry", "3b5efd48-d036-445d-a842-38e14d8ba656", "192.168.1.1");
         assertEquals(AuthResponseType.USER_BANNED, authResponse.authResponseType);
     }
 }

@@ -143,7 +143,8 @@ public class DestinyGGAuthServiceImpl implements AuthService {
 
                 // Serialize json response data and parse to AuthUser instance
                 responseData = new JsonNode(httpResponse.getBody()).getObject();
-                authUser = new DestinyGGUserImpl(responseData.getString("nick"), ipAddress, responseData.getLong("end"));
+                authUser = new DestinyGGUserImpl(responseData.getString("nick"), ipAddress,
+                        responseData.getLong("end")*1000);
                 authUser.setMCName(mcName);
                 authUser.setMCUUID(mcUUID);
 
@@ -160,6 +161,7 @@ public class DestinyGGAuthServiceImpl implements AuthService {
             if (authUser.isAuthExpired()) {
                 return new AuthResponse(authUser, AuthResponseType.USER_NOT_SUB);
             } else {
+                LOGGER.log(Level.WARNING, "Authenticated " + mcName + ", for (hours): " + authUser.getCacheTTL());
                 return new AuthResponse(authUser, AuthResponseType.VALID_AUTH);
             }
         } else {

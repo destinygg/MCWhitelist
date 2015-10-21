@@ -104,7 +104,8 @@ public class DestinyGGUserImpl implements CachedAuthUser {
 
     @Override
     public Long getCacheTTL() {
-        return TimeUnit.MILLISECONDS.toHours(this.subscriptionEndTimestamp - System.currentTimeMillis());
+        return Math.min(TimeUnit.MILLISECONDS.toHours(this.subscriptionEndTimestamp - System.currentTimeMillis()),
+                TimeUnit.MILLISECONDS.toHours(this.cacheEndTimestamp - System.currentTimeMillis()));
     }
 
     @Override
